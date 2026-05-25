@@ -3,11 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NotulaAI PRO - Transkrip Nyata dengan OpenAI API</title>
+    <title>NotulaAI - Versi Gratis Web Speech</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <style>
         body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #0b0f19; color: #f1f5f9; }
@@ -18,54 +16,130 @@
 
     <header class="glass sticky top-0 z-50 border-b border-slate-800 px-6 py-4 flex justify-between items-center">
         <div class="flex items-center gap-3">
-            <div class="w-10 h-10 bg-gradient-to-tr from-blue-600 to-emerald-500 rounded-xl flex items-center justify-center shadow-lg">
-                <i class="fa-solid fa-microphone-lines text-white text-xl"></i>
+            <div class="w-10 h-10 bg-gradient-to-tr from-green-600 to-emerald-500 rounded-xl flex items-center justify-center shadow-lg">
+                <i class="fa-solid fa-microphone text-white text-xl"></i>
             </div>
             <div>
-                <h1 class="font-extrabold text-lg text-white">Notula<span class="text-emerald-400">AI</span> PRO</h1>
-                <p class="text-[10px] text-slate-400">Sistem Pemroses Suara Asli Real-Time</p>
+                <h1 class="font-extrabold text-lg text-white">Notula<span class="text-emerald-400">AI</span> FREE</h1>
+                <p class="text-[10px] text-slate-400">Transkrip Suara Menggunakan Fitur Browser Google</p>
             </div>
         </div>
-        <div class="flex items-center gap-4">
-            <span class="text-xs bg-emerald-500/10 text-emerald-400 px-3 py-1.5 rounded-lg border border-emerald-500/20 flex items-center gap-2">
-                <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span> Sistem Enterprise Terkunci
-            </span>
-        </div>
+        <span class="text-xs bg-green-500/10 text-green-400 px-3 py-1.5 rounded-lg border border-green-500/20">
+            Masa Aktif: Gratis Selamanya
+        </span>
     </header>
 
     <main class="max-w-7xl w-full mx-auto p-4 md:p-8 grid grid-cols-1 lg:grid-cols-12 gap-8 flex-grow">
         
         <div class="lg:col-span-5 flex flex-col gap-6">
             <div class="glass p-6 rounded-2xl shadow-xl flex flex-col gap-4">
-                <h2 class="text-sm font-bold uppercase tracking-wider text-slate-400 flex items-center gap-2">
-                    <i class="fa-solid fa-upload text-blue-400"></i> Upload File Suara Asli
+                <h2 class="text-sm font-bold uppercase tracking-wider text-slate-400">
+                    <i class="fa-solid fa-play text-emerald-400 mr-2"></i>Kontrol Transkrip Instan
                 </h2>
-                
-                <div id="drop-zone" class="border-2 border-dashed border-slate-700 hover:border-blue-500/50 rounded-xl p-8 text-center cursor-pointer bg-slate-900/40 transition-all flex flex-col items-center justify-center gap-3">
-                    <div id="uploader-icon" class="w-14 h-14 bg-slate-800 rounded-full flex items-center justify-center text-slate-400">
-                        <i class="fa-solid fa-file-audio text-2xl"></i>
-                    </div>
-                    <div>
-                        <p id="uploader-text" class="text-sm font-semibold text-slate-200">Klik untuk memilih file rekaman</p>
-                        <p class="text-xs text-slate-500 mt-1">Mendukung MP3, WAV, M4A, MP4 (Maks 25MB)</p>
-                    </div>
-                    <input type="file" id="audio-input" class="hidden" accept="audio/*,video/*">
-                </div>
+                <p class="text-xs text-slate-400 leading-relaxed">
+                    Mengingat pembatasan hak akses file lokal oleh browser, versi gratis ini bekerja dengan cara <b>mendengarkan langsung suara dari mikrofon laptop Anda</b>. 
+                    <br><br>
+                    Silakan putar file rekaman rapat Bapak di HP/Laptop dekat mikrofon, lalu tekan tombol di bawah ini:
+                </p>
 
-                <button id="btn-proses" disabled onclick="prosesAudioAsli()" class="w-full bg-slate-800 text-slate-500 font-bold py-4 rounded-xl text-xs tracking-widest uppercase transition-all flex items-center justify-center gap-2 cursor-not-allowed">
-                    <i class="fa-solid fa-bolt"></i> Hubungkan & Transkrip Sekarang
+                <button id="btn-listen" onclick="mulaiMendengar()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-4 rounded-xl text-xs tracking-widest uppercase transition-all shadow-lg flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-circle-dot animate-pulse"></i> Mulai Rekam & Transkrip Lewat Mik
+                </button>
+                
+                <button id="btn-stop" disabled onclick="stopMendengar()" class="w-full bg-red-900 text-slate-400 font-bold py-3 rounded-xl text-xs tracking-widest uppercase transition-all flex items-center justify-center gap-2 cursor-not-allowed">
+                    Selesai / Berhenti Mendengar
                 </button>
             </div>
 
-            <div id="progress-card" class="glass p-6 rounded-2xl shadow-xl hidden flex flex-col gap-3">
-                <div class="text-xs font-bold text-blue-400 flex items-center gap-2">
-                    <i class="fa-solid fa-spinner animate-spin"></i> <span id="status-text">Mengirim file suara ke Server AI...</span>
-                </div>
-                <div class="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
-                    <div id="progress-bar" class="bg-gradient-to-r from-blue-500 to-emerald-400 h-full w-1/2 animate-pulse"></div>
+            <div id="status-card" class="glass p-6 rounded-2xl shadow-xl hidden">
+                <div class="text-xs font-bold text-emerald-400 flex items-center gap-2">
+                    <i class="fa-solid fa-ear-listen animate-bounce"></i> <span>Sistem sedang mendengarkan ucapan...</span>
                 </div>
             </div>
         </div>
 
         <div class="lg:col-span-7 flex flex-col gap-4">
-            <div class="flex gap-2 border-b border-slate-800 pb
+            <div class="glass rounded-2xl p-6 shadow-xl flex-grow flex flex-col gap-4 min-h-[400px]">
+                <h3 class="text-sm font-bold uppercase tracking-wider text-slate-400">Teks Hasil Dikti Otomatis (Gratis):</h3>
+                <div id="output-box" class="bg-slate-900/60 p-4 rounded-xl text-sm leading-relaxed overflow-y-auto h-[350px] text-slate-400 italic">
+                    Klik tombol hijau untuk mulai merubah suara mikrofon menjadi tulisan di sini...
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <script>
+        // Menggunakan Web Speech API bawaan Google Chrome
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        let recognition = null;
+        
+        if (SpeechRecognition) {
+            recognition = new SpeechRecognition();
+            recognition.continuous = true; // Terus mendengarkan tanpa jeda panjang
+            recognition.interimResults = true; // Menampilkan teks sementara saat berbicara
+            recognition.lang = 'id-ID'; // Set bahasa ke Indonesia
+        }
+
+        const btnListen = document.getElementById('btn-listen');
+        const btnStop = document.getElementById('btn-stop');
+        const statusCard = document.getElementById('status-card');
+        const outputBox = document.getElementById('output-box');
+
+        let finalTranscript = '';
+
+        function mulaiMendengar() {
+            if(!recognition) {
+                alert("Browser Anda belum mendukung fitur gratisan ini, Pak. Mohon buka menggunakan Google Chrome versi terbaru.");
+                return;
+            }
+
+            finalTranscript = '';
+            outputBox.innerText = '';
+            outputBox.className = "bg-slate-900/60 p-4 rounded-xl text-sm leading-relaxed overflow-y-auto h-[350px] text-left text-slate-200 font-medium";
+            
+            recognition.start();
+
+            btnListen.disabled = true;
+            btnListen.className = "w-full bg-slate-800 text-slate-500 font-bold py-4 rounded-xl text-xs tracking-widest uppercase cursor-not-allowed flex items-center justify-center gap-2";
+            
+            btnStop.disabled = false;
+            btnStop.className = "w-full bg-red-600 hover:bg-red-500 text-white font-bold py-3 rounded-xl text-xs tracking-widest uppercase transition-all cursor-pointer flex items-center justify-center gap-2";
+            
+            statusCard.classList.remove('hidden');
+
+            recognition.onresult = (event) => {
+                let interimTranscript = '';
+                for (let i = event.resultIndex; i < event.results.length; ++i) {
+                    if (event.results[i].isFinal) {
+                        finalTranscript += event.results[i][0].transcript + ' ';
+                    } else {
+                        interimTranscript += event.results[i][0].transcript;
+                    }
+                }
+                outputBox.innerHTML = finalTranscript + '<span class="text-slate-500">' + interimTranscript + '</span>';
+            };
+
+            recognition.onerror = (event) => {
+                console.error("Eror Pengenalan Suara: ", event.error);
+                if(event.error === 'not-allowed') {
+                    alert("Mohon izinkan akses mikrofon pada browser Anda di pojok kiri atas bar alamat web agar sistem bisa mendengarkan.");
+                }
+            };
+        }
+
+        function stopMendengar() {
+            if(recognition) {
+                recognition.stop();
+            }
+            btnListen.disabled = false;
+            btnListen.className = "w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-4 rounded-xl text-xs tracking-widest uppercase transition-all shadow-lg cursor-pointer flex items-center justify-center gap-2";
+            
+            btnStop.disabled = true;
+            btnStop.className = "w-full bg-slate-800 text-slate-500 font-bold py-3 rounded-xl text-xs tracking-widest uppercase cursor-not-allowed flex items-center justify-center gap-2";
+            
+            statusCard.classList.add('hidden');
+        }
+    </script>
+</body>
+</html>
