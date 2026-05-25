@@ -228,3 +228,118 @@
                 });
                 
                 let dataWhisper = await resWhisper.json();
+                if (!resWhisper.ok) throw new Error(dataWhisper.error.message);
+                
+                let hasilTranskrip = dataWhisper.text;
+                document.getElementById('output-raw').innerText = hasilTranskrip;
+                document.getElementById('output-raw').className = "bg-slate-900/60 p-4 rounded-xl text-xs leading-relaxed overflow-y-auto h-[330px] text-slate-300 text-left";
+
+                // Tahap 2: Buat kesimpulan dokumen
+                showLoading("Hampir Selesai! GPT sedang merangkum hasil lembar keputusan...");
+                
+                let resGPT = await fetch("https://api.openai.com/v1/chat/completions", {
+                    method: "POST",
+                    headers: { "Authorization": `Bearer \${apiKey}`, "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        model: "gpt-4o-mini",
+                        messages: [
+                            { role: "system", content: "Anda adalah asisten administrasi sekolah formal. Susun teks menjadi lembar laporan notulen rapat yang rapi terstruktur dalam format html bersih." },
+                            { role: "user", content: `Ubah teks rapat ini menjadi laporan keputusan formal:\n\n\${hasilTranskrip}` }
+                        ]
+                    })
+                });
+
+                let dataGPT = await resGPT.json();
+                let hasilKesimpulan = dataGPT.choices[0].message.content;
+
+                document.getElementById('output-result').innerHTML = `<div class="whitespace-pre-line text-left text-slate-300">\${hasilKesimpulan}</div>`;
+                document.getElementById('output-result').className = "bg-slate-900/60 p-4 rounded-xl text-xs leading-relaxed overflow-y-auto h-[330px] text-slate-300 text-left";
+                
+                // Pindah tab otomatis saat selesai biar keren
+                switchTab('result');
+
+            } catch (err) {
+                alert("Sistem Terkendala: " + err.message);
+            } finally {
+                hideLoading(); // Sembunyikan loading bar
+                document.getElementById('audio-icon').className = "fa-solid fa-circle-check text-xl text-indigo-400 mb-1 block";
+            }
+        }
+
+        // ================= FITUR 3: PARSER DOKUMEN PDF LOKAL =================
+        async function prosesPDFFile(input) {
+            const file = input.files[0];
+            if (!file) return;
+
+            document.getElementById('pdf-text').innerText = file.name;
+            document.getElementById('pdf-icon').className = "fa-solid fa-spinner animate-spin text-xl text-emerald-400 mb-1 block";
+            showLoading("Mengekstraksi ringkasan dokumen secara lokal...");
+            switchTab('raw');
+
+            try {
+                const arrayBuffer = await file.arrayBuffer();
+                const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+                let fullText = "";
+                
+                for (let i = 1; i <= pdf.numPages; i++) {
+                    const page = await pdf.getPage(i);
+                    const textContent = await page.getTextContent();
+                    fullText += textContent.items.map(item => item.str).join(" ") + "\n";
+                }
+
+                document.getElementById('output-raw').innerText = fullText;
+                document.getElementById('output-raw').className = "bg-slate-900/60 p-4 rounded-xl text-xs leading-relaxed overflow-y-auto h-[330px] text-slate-300 text-left";
+
+                let kalimat = fullText.split(/[.!?]+/);
+                let poinAturan = [];
+                kalimat.forEach(k => {
+                    let s = k.trim();
+                    if (s.length > 25 && (s.toLowerCase().includes("persen") || s.toLowerCase().includes("%") || s.toLowerCase().includes("jalur") || s.toLowerCase().includes("pendaftaran"))) {
+                        if(poinAturan.length < 5) poinAturan.push(s);
+                    }
+                });
+
+                let htmlKesimpulanDoc = `
+                    <div class="text-slate-300 space-y-3 text-left">
+                        <div class="border-b border-slate-700 pb-2 text-center font-bold text-white uppercase tracking-wide">📄 KESIMPULAN RINGKASAN BERKAS</div>
+                        <p><b>Nama Dokumen:</b> \${file.name}</p>
+                        <p class="text-indigo-400 font-semibold">📌 Hasil Poin Klausul Penting Terdeteksi:</p>
+                        <ul class="list-disc pl-5 space-y-1 text-slate-300 text-xs">
+                            \${poinAturan.map(p => `<li>\${p}.</li>`).join('') || "<li>Berkas berisi Juknis/SK pedoman kerja operasional satuan pendidikan.</li>"}
+                        </ul>
+                    </div>`;
+                
+                document.getElementById('output-result').innerHTML = htmlKesimpulanDoc;
+                document.getElementById('output-result').className = "bg-slate-900/60 p-4 rounded-xl text-xs leading-relaxed overflow-y-auto h-[330px] text-slate-300 text-left";
+                switchTab('result');
+
+            } catch (err) {
+                alert("Gagal membaca file PDF.");
+            } finally {
+                hideLoading();
+                document.getElementById('pdf-icon').className = "fa-solid fa-circle-check text-xl text-emerald-400 mb-1 block";
+            }
+        }
+
+        // Navigasi Tab
+        function switchTab(type) {
+            const btnRaw = document.getElementById('tab-raw');
+            const btnRes = document.getElementById('tab-result');
+            const boxRaw = document.getElementById('box-raw');
+            const boxRes = document.getElementById('box-result');
+            
+            if (type === 'raw') {
+                btnRaw.className = "px-4 py-2 rounded-lg text-[11px] font-bold uppercase transition-all bg-indigo-600 text-white shadow-lg";
+                btnRes.className = "px-4 py-2 rounded-lg text-[11px] font-bold uppercase transition-all bg-slate-800 text-slate-400 hover:text-slate-200";
+                boxRaw.classList.remove('hidden');
+                boxRes.classList.add('hidden');
+            } else {
+                btnRes.className = "px-4 py-2 rounded-lg text-[11px] font-bold uppercase transition-all bg-emerald-600 text-white shadow-lg";
+                btnRaw.className = "px-4 py-2 rounded-lg text-[11px] font-bold uppercase transition-all bg-slate-800 text-slate-400 hover:text-slate-200";
+                boxRes.classList.remove('hidden');
+                boxRaw.classList.add('hidden');
+            }
+        }
+    </script>
+</body>
+</html>
