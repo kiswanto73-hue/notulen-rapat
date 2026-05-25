@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NotulaAI - Aplikasi Transkrip & Notulen Rapat Otomatis</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: #0b0f19;
+            color: #f1f5f9;
+        }
+        .glass {
+            background: rgba(17, 24, 39, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .gradient-text {
+            background: linear-gradient(135deg, #3b82f6 0%, #10b981 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        /* Custom scrollbar */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: rgba(0,0,0,0.1); }
+        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between selection:bg-blue-500/30">
+
+    <!-- NAVBAR -->
+    <header class="glass sticky top-0 z-50 border-b border-slate-800 px-6 py-4 flex justify-between items-center">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 bg-gradient-to-tr from-blue-600 to-emerald-500 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/20">
+                <i class="fa-solid fa-microphone-lines text-white text-xl animate-pulse"></i>
+            </div>
+            <div>
+                <h1 class="font-extrabold text-lg tracking-tight text-white flex items-center gap-2">
+                    Notula<span class="text-emerald-400">AI</span>
+                    <span class="text-[10px] bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded-full border border-blue-500/30">v1.0 PRO</span>
+                </h1>
+                <p class="text-[10px] text-slate-400">Sistem Pintar Transkrip Rapat Sekolah</p>
+            </div>
+        </div>
+        <div class="flex items-center gap-4">
+            <span class="text-xs bg-emerald-500/10 text-emerald-400 px-3 py-1.5 rounded-lg border border-emerald-500/20 flex items-center gap-2">
+                <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span> API Berstatus Aktif
+            </span>
+        </div>
+    </header>
+
+    <!-- MAIN CONTENT -->
+    <main class="max-w-7xl w-full mx-auto p-4 md:p-8 grid grid-cols-1 lg:grid-cols-12 gap-8 flex-grow">
+        
+        <!-- KIRI: CONTROL PANEL & AUDIO UPLOADER -->
+        <div class="lg:col-span-5 flex flex-col gap-6">
+            
+            <!-- UPLOADER CARD -->
+            <div class="glass p-6 rounded-2xl shadow-xl flex flex-col gap-4">
+                <h2 class="text-sm font-bold uppercase tracking-wider text-slate-400 flex items-center gap-2">
+                    <i class="fa-solid fa-cloud-arrow-up text-blue-400"></i> Sumber Rekaman Suara
+                </h2>
+                
+                <div id="drop-zone" class="border-2 border-dashed border-slate-700 hover:border-blue-500/50 rounded-xl p-8 text-center cursor-pointer bg-slate-900/40 transition-all flex flex-col items-center justify-center gap-3 group">
+                    <div class="w-14 h-14 bg-slate-800 rounded-full flex items-center justify-center text-slate-400 group-hover:bg-blue-600 group-hover:text-white transition-all">
+                        <i class="fa-solid fa-file-audio text-2xl"></i>
+                    </div>
+                    <div>
+                        <p class="text-sm font-semibold text-slate-200">Klik atau seret file audio rapat</p>
+                        <p class="text-xs text-slate-500 mt-1">Format didukung: MP3, WAV, M4A (Maks. 25MB)</p>
+                    </div>
+                    <input type="file" id="audio-input" class="hidden" accept="audio/*">
+                </div>
+
+                <!-- PILIH CONTOH SIMULASI (BIAR KEREN PAS DEMO JUALAN) -->
+                <div class="flex flex-col gap-2 mt-2">
+                    <label class="text-xs text-slate-400 font-medium">Uji Coba Cepat (Demo Simulasi Jualan):</label>
+                    <div class="grid grid-cols-2 gap-2">
+                        <button onclick="loadDemo('spmb')" class="text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-200 p-3 rounded-lg border border-slate-700 text-left transition-colors flex flex-col gap-1">
+                            <span class="text-blue-400 font-bold">👉 Rapat SPMB / PPDB</span>
+                            <span class="text-[10px] text-slate-500">Syarat Usia Kelas 1 SD</span>
+                        </button>
+                        <button onclick="loadDemo('bos')" class="text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-200 p-3 rounded-lg border border-slate-700 text-left transition-colors flex flex-col gap-1">
+                            <span class="text-emerald-400 font-bold">👉 Rapat Dana BOS 2026</span>
+                            <span class="text-[10px] text-slate-500">Anggaran Honor & Buku</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- BUTTON PROCESS -->
+                <button id="btn-proses" disabled onclick="prosesAudio()" class="w-full bg-slate-800 text-slate-500 font-bold py-4 rounded-xl text-xs tracking-widest uppercase transition-all flex items-center justify-center gap-2 cursor-not-allowed">
+                    <i class="fa-solid fa-wand-magic-sparkles"></i> Mulai Ekstrak Transkrip & Notulen
+                </button>
+            </div>
+
+            <!-- PROGRES BAR BAR (HIDDEN BY DEFAULT) -->
+            <div id="progress-card" class="glass p-6 rounded-2xl shadow-xl hidden flex flex-col gap-4">
+                <div class="flex justify-between text-xs">
+                    <span id="progress-status" class="text-blue-400 font-bold flex items-center gap-2">
+                        <i class="fa-solid fa-spinner animate-spin"></i> AI sedang membaca audio...
+                    </span>
+                    <span id="progress-percent" class="text-slate-400 font-semibold">0%</span>
+                </div>
+                <div class="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
+                    <div id="progress-bar" class="bg-gradient-to-r from-blue-500 to-emerald-400 h-full w-0 transition-all duration-300"></div>
+                </div>
+            </div>
+            
+        </div>
+
+        <!-- KANAN: LIVE PREVIEW OUTPUT TAB -->
+        <div class="lg:col-span-7 flex flex-col gap-4">
+            
+            <!-- TAB BAR -->
+            <div class="flex gap-2 border-b border-slate-800 pb-2">
+                <button onclick="switchTab('transkrip')" id="tab-transkrip" class="px-5 py-2.5 rounded-lg text-xs font-bold uppercase tracking-wider transition-all bg-blue-600 text-white shadow-lg shadow-blue-500/10">
+                    <i class="fa-solid fa-comment-dots mr-1"></i> 1. Transkrip Percakapan Murni
+                </button>
+                <button onclick="switchTab('notulen')" id="tab-notulen" class="px-5 py-2.5 rounded-lg text-xs font-bold uppercase tracking-wider transition-all bg-slate-800 text-slate-400 hover:text-slate-200">
+                    <i class="fa-solid fa-file-signature mr-1"></i> 2. Hasil Notulen Resmi AI
+                </button>
+            </div>
+
+            <!-- TAB CONTENT 1: TRANSKRIP -->
+            <div id="content-transkrip" class="glass rounded-2xl p-6 shadow-xl flex-grow flex flex-col gap-4 min-h-[480px]">
+                <div class="flex justify-between items-center">
+                    <h3 class="text-sm font-bold uppercase tracking-wider text-slate-400">Teks Hasil Pembicaraan (STT)</h3>
+                    <button onclick="copyContent('transkrip-box')" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-1.5 rounded-lg border border-slate-700 transition-colors">
+                        <i class="fa-solid fa-copy mr-1"></i> Salin
+                    </button>
+                </div>
+                <div id="transkrip-box" class="bg-slate-900/60 border border-slate-800 p-4 rounded-xl text-sm leading-relaxed overflow-y-auto max-h-[420px] text-slate-400 h-full italic">
+                    Belum ada audio yang diproses. Silakan pilih file atau klik salah satu tombol demo disamping untuk mensimulasikan sistem jualan.
+                </div>
+            </div>
+
+            <!-- TAB CONTENT 2: NOTULEN -->
+            <div id="content-notulen" class="glass rounded-2xl p-6 shadow-xl flex-grow hidden flex flex-col gap-4 min-h-[480px]">
+                <div class="flex justify-between items-center">
+                    <h3 class="text-sm font-bold uppercase tracking-wider text-emerald-400">Hasil Format Rangkuman Dokumen</h3>
+                    <div class="flex gap-2">
+                        <button onclick="copyContent('notulen-box')" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-1.5 rounded-lg border border-slate-700 transition-colors">
+                            <i class="fa-solid fa-copy mr-1"></i> Salin Teks
+                        </button>
+                        <button onclick="window.print()" class="text-xs bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-lg font-bold transition-all">
+                            <i class="fa-solid fa-print mr-1"></i> Cetak / PDF
+                        </button>
+                    </div>
+                </div>
+                <div id="notulen-box" class="bg-slate-900/60 border border-slate-800 p-6 rounded-xl text-sm leading-relaxed overflow-y-auto max-h-[420px] text-slate-400 h-full italic">
+                    Menunggu proses ekstraksi AI...
+                </div>
+            </div>
+
+        </div>
+
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="border-t border-slate-800 bg-slate-950 px-6 py-4 text-center text-xs text-slate-500">
+        &copy; 2026 NotulaAI Tech. Dibuat khusus sebagai Software Berdaya Jual Tinggi untuk Ekosistem Pendidikan Indonesia.
+    </footer>
+
+    <!-- SCRIPT LOGIC JUALAN -->
+    <script>
+        // Database Simulasi Data Rapat Sekolah
+        const demoData = {
+            spmb: {
+                transkrip: `<b>[00:02] Kepala Sekolah:</b> Assalamualaikum wr. wb. Terima kasih bapak ibu dewan guru dan panitia SPMB 2026 SDN 165 Tanjung Jabung Barat sudah hadir. Hari ini kita clearkan aturan anak di bawah 6 tahun. Banyak ortu mendesak mendaftar usia 5 tahun 6 bulan.<br><br><b>[00:45] Ketua Panitia PPDB:</b> Betul pak, sesuai aturan Juknis Bupati Nomor 202 Tahun 2026, usia minimal itu memang bisa dispensasi sampai 5 tahun 6 bulan per 1 Juli. Tapi syaratnya ketat, harus ada rekomendasi tertulis tentang kecerdasan atau bakat istimewa dan kesiapan psikis dari psikolog profesional.<br><br><b>[01:20] Operator Sekolah (OPS):</b> Siap pak ketua. Pertanyaannya, apakah surat rekomendasi dari psikolog itu wajib kita upload ke sistem Dapodik? Karena banyak yang bingung di grup operator.<br><br><b>[01:45] Kepala Sekolah:</b> Ini poin penting. Berdasarkan konfirmasi ke Dinas Pendidikan, berkas rekomendasi psikolog atau surat keterangan hasil rapat dewan guru itu TIDAK PERLU diunggah ke Dapodik. Di aplikasi Dapodik cukup kita validasi data periodik dan riwayat prasekolah anak saja. Namun, fisik surat rekomendasi aslinya wajib disimpan rapi di arsip sekolah sebagai hardcopy pertanggungjawaban legalitas jika ada audit dari Dinas. Ingat, utamakan dulu yang usia 7 tahun ke atas, dan dilarang keras ada tes Calistung ya.`,
+                notulen: `<div class="text-slate-200 font-sans">
+                    <h2 class="text-center font-bold text-lg border-b border-slate-700 pb-2 mb-4 text-white uppercase tracking-wider">NOTULEN HASIL RAPAT PLENO PANITIA SPMB 2026</h2>
+                    <table class="w-full text-xs mb-4 text-slate-300">
+                        <tr><td class="w-32 py-1 font-bold">Satuan Pendidikan</td><td>: SDN 165 Tanjung Jabung Barat</td></tr>
+                        <tr><td class="py-1 font-bold">Agenda Rapat</td><td>: Harmonisasi Validasi Usia Dini Pendaftaran Kelas 1 SD</td></tr>
+                        <tr><td class="py-1 font-bold">Regulasi Acuan</td><td>: Juknis Keputusan Bupati No. 202/Kep.Bup/DISDIK/2026</td></tr>
+                    </table>
+                    
+                    <h3 class="text-xs font-bold text-blue-400 uppercase tracking-wider mb-2">⚡ POIN UTAMA PEMBAHASAN:</h3>
+                    <ul class="list-disc pl-5 space-y-1 text-xs text-slate-300 mb-4">
+                        <li><b>Kebijakan Batas Usia:</b> Calon murid kelas 1 SD berusia minimal 5 tahun 6 bulan per 1 Juli diperbolehkan mendaftar jika memenuhi kriteria kecerdasan istimewa/kesiapan psikis.</li>
+                        <li><b>Syarat Berkas:</b> Wajib menyerahkan surat rekomendasi tertulis dari Psikolog Profesional (atau alternatif Surat Keterangan Rapat Dewan Guru sekolah asal).</li>
+                        <li><b>Larangan Mutlak:</b> Tidak diperkenankan melakukan tes seleksi Calistung (Membaca, Menulis, Berhitung).</li>
+                    </ul>
+
+                    <h3 class="text-xs font-bold text-emerald-400 uppercase tracking-wider mb-2">📌 KEPUTUSAN & TINDAKAN LANJUT OPERATOR (ACTION ITEMS):</h3>
+                    <div class="bg-slate-900 border-l-4 border-emerald-500 p-3 rounded text-xs text-slate-300 space-y-1">
+                        <p><b>1. Prosedur Aplikasi Dapodik:</b> File PDF/Scan rekomendasi psikolog <u>TIDAK DIUNGGAH</u> ke sistem Dapodik. Operator cukup menginput validasi kesiapan belajar/periodik siswa.</p>
+                        <p><b>2. Manajemen Arsip:</b> Berkas asli (hardcopy) surat rekomendasi wajib disimpan di lemari arsip sekolah sebagai dokumen otentik verifikasi Dinas Pendidikan.</p>
+                    </div>
+                </div>`
+            },
+            bos: {
+                transkrip: `<b>[00:05] Kepala Sekolah:</b> Selamat siang bapak ibu, mari kita review penyusunan Rencana Kegiatan dan Anggaran Sekolah (RKAS) untuk Dana BOS Reguler 2026 lewat aplikasi ARKAS 4.2.<br><br><b>[00:35] Bendahara BOS:</b> Baik pak, anggaran kita plot komponen utamanya. Berdasarkan juknis terbaru, persentase batas pembayaran honor guru honorer di sekolah negeri dibatasi maksimal 20 persen dari total dana yang diterima.<br><br><b>[01:10] Ketua Komite:</b> Untuk pengadaan buku dan pengembangan perpustakaan digital bagaimana ketentuannya bu?<br><br><b>[01:30] Bendahara BOS:</b> Sesuai aturan mandatory tahun 2026, alokasi untuk buku perpustakaan minimal 10 persen. Dan tahun ini prioritas kita diarahkan ke digitalisasi sekolah, seperti pengadaan Papan Interaktif Digital atau piranti IT pembelajaran aktif lainnya. Pemeliharaan sarana prasarana ringan kita batasi aman di angka maksimal 20 persen saja.`,
+                notulen: `<div class="text-slate-200 font-sans">
+                    <h2 class="text-center font-bold text-lg border-b border-slate-700 pb-2 mb-4 text-white uppercase tracking-wider">NOTULEN RATAS RKAS DANA BOSP TAHUN 2026</h2>
+                    <table class="w-full text-xs mb-4 text-slate-300">
+                        <tr><td class="w-32 py-1 font-bold">Agenda Utama</td><td>: Alokasi Pagu Anggaran ARKAS Dana BOS Reguler 2026</td></tr>
+                        <tr><td class="py-1 font-bold">Fokus Kebijakan</td><td>: Akselerasi Digitalisasi Sekolah & Ketentuan Pembatasan Pagu</td></tr>
+                    </table>
+                    
+                    <h3 class="text-xs font-bold text-amber-400 uppercase tracking-wider mb-2">📊 AMBANG BATAS MANDATORY (JUKNIS 2026):</h3>
+                    <ul class="list-disc pl-5 space-y-1 text-xs text-slate-300 mb-4">
+                        <li><b>Maksimal 20% (Pagu Honor):</b> Alokasi dana untuk pembayaran honorer sekolah negeri dikunci maksimal 20%.</li>
+                        <li><b>Minimal 10% (Perpustakaan):</b> Pembelian buku teks utama dan pelengkap perpustakaan sekolah wajib minimal 10%.</li>
+                        <li><b>Maksimal 20% (Sarpras):</b> Pemeliharaan fasilitas belajar ringan sekolah dibatasi maksimal 20%.</li>
+                    </ul>
+
+                    <h3 class="text-xs font-bold text-emerald-400 uppercase tracking-wider mb-2">🚀 PRIORITAS STRATEGIS:</h3>
+                    <p class="text-xs text-slate-300 bg-slate-900 p-3 rounded border border-slate-800">Sekolah memprioritaskan sisa alokasi operasional untuk investasi perangkat IT pembelajaran berupa <b>Papan Interaktif Digital (PID)</b> guna menunjang digitalisasi kelas secara penuh di tahun ajaran ini.</p>
+                </div>`
+            }
+        };
+
+        let currentActiveDemo = null;
+
+        // Trigger input file click
+        const dropZone = document.getElementById('drop-zone');
+        const audioInput = document.getElementById('audio-input');
+        const btnProses = document.getElementById('btn-proses');
+
+        dropZone.addEventListener('click', () => audioInput.click());
+        audioInput.addEventListener('change', () => {
+            if(audioInput.files.length > 0) {
+                dropZone.innerHTML = `<div class='text-emerald-400 text-3xl'><i class='fa-solid fa-file-circle-check'></i></div><p class='text-sm font-bold text-slate-200'>\${audioInput.files[0].name}</p><p class='text-[11px] text-slate-500'>File berhasil dimuat secara lokal</p>`;
+                btnProses.disabled = false;
+                btnProses.className = "w-full bg-gradient-to-r from-blue-600 to-emerald-500 text-white font-bold py-4 rounded-xl text-xs tracking-widest uppercase transition-all shadow-lg hover:brightness-110 active:scale-95 cursor-pointer";
+                currentActiveDemo = 'spmb'; // default if they upload manual audio
+            }
+        });
+
+        function loadDemo(type) {
+            currentActiveDemo = type;
+            dropZone.innerHTML = `<div class='text-blue-400 text-3xl animate-bounce'><i class='fa-solid fa-headphones'></i></div><p class='text-sm font-bold text-white uppercase tracking-wide'>Demo Rapat \${type.toUpperCase()} Terpilih</p><p class='text-[10px] text-slate-400'>Siap disimulasikan sebagai bahan presentasi produk</p>`;
+            btnProses.disabled = false;
+            btnProses.className = "w-full bg-gradient-to-r from-blue-600 to-emerald-500 text-white font-bold py-4 rounded-xl text-xs tracking-widest uppercase transition-all shadow-lg hover:brightness-110 active:scale-95 cursor-pointer";
+            
+            // clear display
+            document.getElementById('transkrip-box').innerHTML = "File siap. Silakan klik tombol 'Mulai Ekstrak' di bawah.";
+            document.getElementById('transkrip-box').className = "bg-slate-900/60 border border-slate-800 p-4 rounded-xl text-sm leading-relaxed overflow-y-auto max-h-[420px] text-slate-500 text-center py-12";
+        }
+
+        function prosesAudio() {
+            if (!currentActiveDemo) return;
+            
+            const progressCard = document.getElementById('progress-card');
+            const progressBar = document.getElementById('progress-bar');
+            const progressPercent = document.getElementById('progress-percent');
+            const progressStatus = document.getElementById('progress-status');
+            
+            progressCard.classList.remove('hidden');
+            btnProses.disabled = true;
+            btnProses.innerText = "SEDANG MEMPROSES AUDIO...";
+            
+            let width = 0;
+            const steps = [
+                "Membaca decoding gelombang audio...",
+                "Melakukan segmentasi suara pembicara (Diarization)...",
+                "Mengubah ucapan menjadi teks menggunakan Whisper STT...",
+                "Menganalisis teks transkrip dengan LLM AI Notulen...",
+                "Menyusun format dokumen resmi berdasarkan Juknis..."
+            ];
+
+            const interval = setInterval(() => {
+                width += 4;
+                if (width > 100) width = 100;
+                
+                progressBar.style.width = width + '%';
+                progressPercent.innerText = width + '%';
+                
+                // Dynamic text status change based on progress
+                let currentStepIdx = Math.floor((width / 101) * steps.length);
+                progressStatus.innerHTML = `<i class="fa-solid fa-spinner animate-spin"></i> \${steps[currentStepIdx] || "Hampir selesai..."}`;
+
+                if (width >= 100) {
+                    clearInterval(interval);
+                    btnProses.innerHTML = "<i class='fa-solid fa-check-double'></i> PROSES SUKSES Selesai!";
+                    btnProses.className = "w-full bg-emerald-600 text-white font-bold py-4 rounded-xl text-xs tracking-widest uppercase cursor-default";
+                    
+                    // Injection data real
+                    document.getElementById('transkrip-box').innerHTML = demoData[currentActiveDemo].transkrip;
+                    document.getElementById('transkrip-box').className = "bg-slate-900/60 border border-slate-800 p-4 rounded-xl text-sm leading-relaxed overflow-y-auto max-h-[420px] text-slate-200 h-full text-left";
+                    
+                    document.getElementById('notulen-box').innerHTML = demoData[currentActiveDemo].notulen;
+                    document.getElementById('notulen-box').className = "bg-slate-900/60 border border-slate-800 p-6 rounded-xl text-sm leading-relaxed overflow-y-auto max-h-[420px] text-slate-200 h-full text-left";
+                    
+                    // Auto slide into tab transkrip
+                    switchTab('transkrip');
+                }
+            }, 120);
+        }
+
+        function switchTab(type) {
+            const tabT = document.getElementById('tab-transkrip');
+            const tabN = document.getElementById('tab-notulen');
+            const contentT = document.getElementById('content-transkrip');
+            const contentN = document.getElementById('content-notulen');
+            
+            if (type === 'transkrip') {
+                tabT.className = "px-5 py-2.5 rounded-lg text-xs font-bold uppercase tracking-wider transition-all bg-blue-600 text-white shadow-lg";
+                tabN.className = "px-5 py-2.5 rounded-lg text-xs font-bold uppercase tracking-wider transition-all bg-slate-800 text-slate-400 hover:text-slate-200";
+                contentT.classList.remove('hidden');
+                contentN.classList.add('hidden');
+            } else {
+                tabN.className = "px-5 py-2.5 rounded-lg text-xs font-bold uppercase tracking-wider transition-all bg-emerald-600 text-white shadow-lg";
+                tabT.className = "px-5 py-2.5 rounded-lg text-xs font-bold uppercase tracking-wider transition-all bg-slate-800 text-slate-400 hover:text-slate-200";
+                contentN.classList.remove('hidden');
+                contentT.classList.add('hidden');
+            }
+        }
+
+        function copyContent(containerId) {
+            const el = document.getElementById(containerId);
+            const storage = document.createElement('textarea');
+            storage.value = el.innerText;
+            document.body.appendChild(storage);
+            storage.select();
+            document.execCommand('copy');
+            document.body.removeChild(storage);
+            alert('Konten berhasil disalin ke papan klip! 👍');
+        }
+    </script>
+</body>
+</html>
