@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NotulaAI Ultimate - Edisi Perbaikan Indikator</title>
+    <title>NotulaAI Ultimate - Edisi Perbaikan Indikator Sukses</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
@@ -29,7 +29,7 @@
         </div>
         <div class="flex items-center gap-2">
             <input type="password" id="api-key" placeholder="Masukkan API Key OpenAI..." class="bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-slate-300 focus:outline-none focus:border-indigo-500 w-52" />
-            <span class="text-xs bg-indigo-500/10 text-indigo-400 px-3 py-1.5 rounded-lg border border-indigo-500/20 font-semibold">v2.1 FIXED</span>
+            <span class="text-xs bg-indigo-500/10 text-indigo-400 px-3 py-1.5 rounded-lg border border-indigo-500/20 font-semibold">v2.2 FIXED</span>
         </div>
     </header>
 
@@ -76,13 +76,16 @@
                 </div>
             </div>
 
-            <div id="loading-status" class="hidden glass p-5 rounded-xl text-center border border-indigo-500/30 flex flex-col gap-2">
-                <div class="text-xs text-indigo-400 font-bold flex items-center justify-center gap-2">
-                    <i class="fa-solid fa-circle-notch animate-spin text-sm"></i>
-                    <span id="loading-msg">Sistem AI sedang memproses berkas Anda...</span>
+            <div id="loading-status" class="hidden bg-slate-900/90 border border-indigo-500/40 p-5 rounded-2xl text-center flex flex-col gap-3 shadow-2xl">
+                <div class="flex items-center justify-center gap-3">
+                    <svg class="animate-spin h-5 w-5 text-indigo-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <span id="loading-msg" class="text-xs font-bold text-indigo-300">Sistem AI sedang memproses data...</span>
                 </div>
-                <div class="w-full bg-slate-950 h-1 rounded-full overflow-hidden">
-                    <div class="bg-gradient-to-r from-indigo-500 to-purple-500 h-full w-full animate-pulse"></div>
+                <div class="w-full bg-slate-950 h-1.5 rounded-full overflow-hidden relative">
+                    <div class="bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 h-full w-full absolute animate-pulse"></div>
                 </div>
             </div>
         </div>
@@ -92,7 +95,7 @@
                 <button onclick="switchTab('raw')" id="tab-raw" class="px-4 py-2 rounded-lg text-[11px] font-bold uppercase tracking-wider transition-all bg-indigo-600 text-white shadow-lg">
                     <i class="fa-solid fa-align-left mr-1"></i> Teks Mentah / Transkrip
                 </button>
-                <button onclick="window.switchTab('result')" id="tab-result" class="px-4 py-2 rounded-lg text-[11px] font-bold uppercase tracking-wider transition-all bg-slate-800 text-slate-400 hover:text-slate-200">
+                <button onclick="switchTab('result')" id="tab-result" class="px-4 py-2 rounded-lg text-[11px] font-bold uppercase tracking-wider transition-all bg-slate-800 text-slate-400 hover:text-slate-200">
                     <i class="fa-solid fa-wand-magic-sparkles mr-1"></i> Kesimpulan Notulen AI
                 </button>
             </div>
@@ -119,10 +122,6 @@
 
     </main>
 
-    <footer class="border-t border-slate-800 bg-slate-950 px-6 py-3 text-center text-xs text-slate-500">
-        &copy; 2026 NotulaAI Ultimate. Semua Fitur Terintegrasi Secara Maksimal.
-    </footer>
-
     <script>
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
 
@@ -132,14 +131,19 @@
         let seconds = 0;
 
         function showLoading(msg) {
-            document.getElementById('loading-status').classList.remove('hidden');
+            const loader = document.getElementById('loading-status');
             document.getElementById('loading-msg').innerText = msg;
+            loader.classList.remove('hidden'); // Paksa hilangkan class hidden bawaan Tailwind
+            loader.style.display = "flex";    // Paksa struktur box menjadi fleksibel terlihat
         }
+        
         function hideLoading() {
-            document.getElementById('loading-status').classList.add('hidden');
+            const loader = document.getElementById('loading-status');
+            loader.classList.add('hidden');
+            loader.style.display = "none";
         }
 
-        // ================= FITUR 1: LOGIKA REKAM LANGSUNG MIKROFON =================
+        // ================= FITUR 1: REKAM LANGSUNG =================
         async function mulaiRekamLangsung() {
             audioChunks = [];
             seconds = 0;
@@ -150,16 +154,15 @@
                 const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
                 mediaRecorder = new MediaRecorder(stream);
                 
-                mediaRecorder.ondataavailable = event => {
-                    audioChunks.push(event.data);
-                };
+                mediaRecorder.ondataavailable = event => { audioChunks.push(event.data); };
 
                 mediaRecorder.onstop = async () => {
                     const audioBlob = new Blob(audioChunks, { type: 'audio/mp3' });
                     const fileAudioHasilRekam = new File([audioBlob], "rekaman_rapat_langsung.mp3", { type: 'audio/mp3' });
                     
-                    // Eksekusi kirim
-                    eksekusiKirimKeAI(fileAudioHasilRekam);
+                    // Langsung panggil loading sebelum masuk ke fungsi AI utama
+                    showLoading("Mengirim rekaman suara langsung ke OpenAI Whisper...");
+                    setTimeout(() => { eksekusiKirimKeAI(fileAudioHasilRekam); }, 300);
                 };
 
                 mediaRecorder.start();
@@ -172,11 +175,11 @@
                     seconds++;
                     let mins = Math.floor(seconds / 60).toString().padStart(2, '0');
                     let secs = (seconds % 60).toString().padStart(2, '0');
-                    document.getElementById('timer-val').innerText = `\${mins}:\${secs}`;
+                    document.getElementById('timer-val').innerText = `${mins}:${secs}`;
                 }, 1000);
 
             } catch (err) {
-                alert("Gagal mengakses mikrofon laptop Bapak. Mohon berikan izin di browser.");
+                alert("Gagal mengakses mikrofon.");
             }
         }
 
@@ -199,20 +202,22 @@
             if (!file) return;
             document.getElementById('audio-text').innerText = file.name;
             document.getElementById('audio-icon').className = "fa-solid fa-spinner animate-spin text-xl text-indigo-400 mb-1 block";
-            eksekusiKirimKeAI(file);
+            
+            // Picu loading instan di sini
+            showLoading("Membaca file audio dan mengirim ke OpenAI Whisper...");
+            setTimeout(() => { eksekusiKirimKeAI(file); }, 300);
         }
 
-        // ================= PERBAIKAN CORE ENGINE INDIKATOR AUDIO =================
+        // ================= CORE INTERFACES OPENAI =================
         async function eksekusiKirimKeAI(fileAudio) {
             const apiKey = document.getElementById('api-key').value.trim();
             if (!apiKey) {
-                alert("Mohon isi OpenAI API Key valid Anda di pojok kanan atas terlebih dahulu!");
+                hideLoading();
+                alert("Mohon isi OpenAI API Key di pojok kanan atas terlebih dahulu!");
                 document.getElementById('audio-icon').className = "fa-solid fa-cloud-arrow-up text-xl text-slate-500 mb-1 block";
                 return;
             }
 
-            // Memunculkan kotak loading animasi abu-abu/indigo di kiri bawah
-            showLoading("Mengirim file rekaman ke OpenAI Whisper AI...");
             switchTab('raw');
 
             try {
@@ -223,7 +228,7 @@
 
                 let resWhisper = await fetch("https://api.openai.com/v1/audio/transcriptions", {
                     method: "POST",
-                    headers: { "Authorization": `Bearer \${apiKey}` },
+                    headers: { "Authorization": `Bearer ${apiKey}` },
                     body: formData
                 });
                 
@@ -234,17 +239,17 @@
                 document.getElementById('output-raw').innerText = hasilTranskrip;
                 document.getElementById('output-raw').className = "bg-slate-900/60 p-4 rounded-xl text-xs leading-relaxed overflow-y-auto h-[330px] text-slate-300 text-left";
 
-                // Tahap 2: Buat kesimpulan dokumen
-                showLoading("Hampir Selesai! GPT sedang merangkum hasil lembar keputusan...");
+                // Perbarui pesan loading sebelum panggil GPT
+                document.getElementById('loading-msg').innerText = "Hampir Selesai! GPT sedang merangkum hasil keputusan...";
                 
                 let resGPT = await fetch("https://api.openai.com/v1/chat/completions", {
                     method: "POST",
-                    headers: { "Authorization": `Bearer \${apiKey}`, "Content-Type": "application/json" },
+                    headers: { "Authorization": `Bearer ${apiKey}`, "Content-Type": "application/json" },
                     body: JSON.stringify({
                         model: "gpt-4o-mini",
                         messages: [
-                            { role: "system", content: "Anda adalah asisten administrasi sekolah formal. Susun teks menjadi lembar laporan notulen rapat yang rapi terstruktur dalam format html bersih." },
-                            { role: "user", content: `Ubah teks rapat ini menjadi laporan keputusan formal:\n\n\${hasilTranskrip}` }
+                            { role: "system", content: "Anda adalah asisten administrasi sekolah formal. Susun teks menjadi lembar laporan notulen rapat yang rapi terstruktur." },
+                            { role: "user", content: `Ubah teks rapat ini menjadi laporan keputusan formal:\n\n${hasilTranskrip}` }
                         ]
                     })
                 });
@@ -252,16 +257,15 @@
                 let dataGPT = await resGPT.json();
                 let hasilKesimpulan = dataGPT.choices[0].message.content;
 
-                document.getElementById('output-result').innerHTML = `<div class="whitespace-pre-line text-left text-slate-300">\${hasilKesimpulan}</div>`;
+                document.getElementById('output-result').innerHTML = `<div class="whitespace-pre-line text-left text-slate-300">${hasilKesimpulan}</div>`;
                 document.getElementById('output-result').className = "bg-slate-900/60 p-4 rounded-xl text-xs leading-relaxed overflow-y-auto h-[330px] text-slate-300 text-left";
                 
-                // Pindah tab otomatis saat selesai biar keren
                 switchTab('result');
 
             } catch (err) {
                 alert("Sistem Terkendala: " + err.message);
             } finally {
-                hideLoading(); // Sembunyikan loading bar
+                hideLoading();
                 document.getElementById('audio-icon').className = "fa-solid fa-circle-check text-xl text-indigo-400 mb-1 block";
             }
         }
@@ -273,6 +277,7 @@
 
             document.getElementById('pdf-text').innerText = file.name;
             document.getElementById('pdf-icon').className = "fa-solid fa-spinner animate-spin text-xl text-emerald-400 mb-1 block";
+            
             showLoading("Mengekstraksi ringkasan dokumen secara lokal...");
             switchTab('raw');
 
@@ -302,10 +307,10 @@
                 let htmlKesimpulanDoc = `
                     <div class="text-slate-300 space-y-3 text-left">
                         <div class="border-b border-slate-700 pb-2 text-center font-bold text-white uppercase tracking-wide">📄 KESIMPULAN RINGKASAN BERKAS</div>
-                        <p><b>Nama Dokumen:</b> \${file.name}</p>
+                        <p><b>Nama Dokumen:</b> ${file.name}</p>
                         <p class="text-indigo-400 font-semibold">📌 Hasil Poin Klausul Penting Terdeteksi:</p>
                         <ul class="list-disc pl-5 space-y-1 text-slate-300 text-xs">
-                            \${poinAturan.map(p => `<li>\${p}.</li>`).join('') || "<li>Berkas berisi Juknis/SK pedoman kerja operasional satuan pendidikan.</li>"}
+                            ${poinAturan.map(p => `<li>${p}.</li>`).join('') || "<li>Berkas berisi Juknis/SK pedoman kerja operasional satuan pendidikan.</li>"}
                         </ul>
                     </div>`;
                 
