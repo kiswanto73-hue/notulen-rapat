@@ -146,6 +146,31 @@
 
         let pengenalSuaraSTT;
         let teksTerakumulasi = "";
+        let wakeLock = null; // Menyimpan status pengunci layar
+
+        // FUNGSI UNTUK MENCEGAH LAYAR MATI (WAKE LOCK)
+        async function aktifkanWakeLock() {
+            if ('wakeLock' in navigator) {
+                try {
+                    wakeLock = await navigator.wakeLock.request('screen');
+                    console.log('Wake Lock aktif: Layar dipaksa untuk tetap menyala.');
+                } catch (err) {
+                    console.warn(`Gagal mengaktifkan Wake Lock: ${err.message}`);
+                }
+            } else {
+                console.warn('Browser tidak mendukung Screen Wake Lock API.');
+            }
+        }
+
+        // FUNGSI UNTUK MELEPAS KENDALI LAYAR
+        function matikanWakeLock() {
+            if (wakeLock !== null) {
+                wakeLock.release().then(() => {
+                    wakeLock = null;
+                    console.log('Wake Lock dilepas: Layar kembali normal.');
+                });
+            }
+        }
 
         function showLoading(msg) {
             const loader = document.getElementById('loading-status');
@@ -159,7 +184,6 @@
             loader.style.display = "none";
         }
 
-        // CONTROL LOGIC: MEMERIKSA API KEY APAKAH DIISI ATAU KOSONG
         function cekOpsiSistem() {
             const key = document.getElementById('api-key').value.trim();
             const boxUpload = document.getElementById('box-audio-upload');
@@ -171,7 +195,6 @@
             const badgeApi = document.getElementById('badge-api-status');
 
             if (key.length > 10) {
-                // Mode Premium Terbuka (Upload File Aktif)
                 boxUpload.classList.remove('opacity-60');
                 dropzone.className = "border border-dashed border-indigo-500 hover:border-indigo-400 rounded-xl p-3 text-center cursor-pointer transition-all bg-slate-900/40 relative";
                 audioInput.disabled = false;
@@ -183,7 +206,6 @@
                 badgeApi.className = "text-[9px] bg-indigo-500/20 text-indigo-300 px-1.5 py-0.5 rounded uppercase font-extrabold";
                 badgeApi.innerText = "Premium Premium";
             } else {
-                // Kembali ke Mode Gratis (Upload File Terkunci)
                 boxUpload.classList.add('opacity-60');
                 dropzone.className = "border border-dashed border-slate-700 rounded-xl p-3 text-center transition-all bg-slate-900/20 relative pointer-events-none";
                 audioInput.disabled = true;
@@ -196,7 +218,6 @@
             }
         }
 
-        // ================= JALUR PILIHAN GRATIS: SPEECH TO TEXT WEB API =================
         function mulaiSpeechToText() {
             const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
             if (!SpeechRecognition) {
@@ -204,8 +225,11 @@
                 return;
             }
 
+            // Aktifkan pengunci layar agar tidak mati saat merekam suara rapat
+            aktifkanWakeLock();
+
             pengenalSuaraSTT = new SpeechRecognition();
-            pengenalSuaraSTT.lang = 'id-ID'; // Setel Bahasa Indonesia resmi
+            pengenalSuaraSTT.lang = 'id-ID'; 
             pengenalSuaraSTT.interimResults = true;
             pengenalSuaraSTT.continuous = true;
 
@@ -213,7 +237,6 @@
             document.getElementById('output-raw').innerText = "Mendengarkan suara Anda... Silakan berbicara dekat mikrofon laptop.";
             switchTab('raw');
 
-            // Jalankan UI Gelombang Animasi
             document.getElementById('stt-wave-container').style.display = "flex";
             document.getElementById('stt-wave-container').classList.remove('hidden');
             
@@ -229,13 +252,21 @@
                 for (let i = event.resultIndex; i < event.results.length; ++i) {
                     if (event.results[i].isFinal) {
                         teksTerakumulasi += event.results[i][0].transcript + ' ';
-                     finalTranscript += event.results[i][0].transcript + ' ';
+                        finalTranscript += event.results[i][0].transcript + ' ';
                     } else {
                         interimTranscript += event.results[i][0].transcript;
                     }
                 }
-                
                 document.getElementById('output-raw').innerText = teksTerakumulasi + interimTranscript;
+            };
+
+            // Jika mikrofon tiba-tiba mati sendiri di tengah jalan, sistem akan otomatis menyalakan ulang selama tombol Selesai belum ditekan.
+            pengenalSuaraSTT.onend = () => {
+                const sedangMerekam = document.getElementById('btn-start-stt').disabled;
+                if (sedangMerekam && pengenalSuaraSTT) {
+                    console.log("Koneksi terputus mendadak, menyalakan kembali mikrofon...");
+                    try { pengenalSuaraSTT.start(); } catch(e) {}
+                }
             };
 
             pengenalSuaraSTT.onerror = err => { console.error("STT Error: ", err); };
@@ -244,10 +275,13 @@
 
         function stopSpeechToText() {
             if (pengenalSuaraSTT) {
+                pengenalSuaraSTT.onend = null; // hapus auto-restart
                 pengenalSuaraSTT.stop();
             }
 
-            // Matikan Gelombang Animasi
+            // Kembalikan izin pengaturan layar ke sistem bawaan
+            matikanWakeLock();
+
             document.getElementById('stt-wave-container').style.display = "none";
             document.getElementById('stt-wave-container').classList.add('hidden');
 
@@ -256,7 +290,6 @@
             document.getElementById('btn-stop-stt').disabled = true;
             document.getElementById('btn-stop-stt').className = "flex-1 bg-slate-800 text-slate-500 font-bold py-2.5 rounded-xl text-xs uppercase tracking-wider cursor-not-allowed flex items-center justify-center gap-2";
 
-            // Karena gratisan, kita buat draf Lembar Keputusan terstruktur secara cerdas lewat skrip lokal instan
             let isiTeksRapat = document.getElementById('output-raw').innerText;
             
             let templateNotulenLokal = `📋 NOTULEN HASIL REKAMAN RAPAT (FREE MODE)
@@ -274,8 +307,7 @@ Status Hasil: Sukses Ditranskrip 100% Bebas Biaya
             switchTab('result');
         }
 
-        // ================= JALUR PILIHAN PREMIUM: UPLOAD FILE AUDIO OPENAI =================
-        function prosesAudioFile(input) {
+        async function prosesAudioFile(input) {
             const file = input.files[0];
             if (!file) return;
             document.getElementById('audio-text').innerText = file.name;
@@ -335,7 +367,6 @@ Status Hasil: Sukses Ditranskrip 100% Bebas Biaya
             }
         }
 
-        // ================= FITUR BERKAS PDF LOKAL (SELALU GRATIS) =================
         async function prosesPDFFile(input) {
             const file = input.files[0];
             if (!file) return;
@@ -407,6 +438,13 @@ Status Hasil: Sukses Ditranskrip 100% Bebas Biaya
                 boxRaw.classList.add('hidden');
             }
         }
+
+        // Memastikan sistem kembali mengunci layar saat user berpindah tab browser/aplikasi lalu kembali lagi
+        document.addEventListener('visibilitychange', async () => {
+            if (wakeLock !== null && document.visibilityState === 'visible') {
+                await aktifkanWakeLock();
+            }
+        });
     </script>
 </body>
 </html>
